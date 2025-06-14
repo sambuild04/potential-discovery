@@ -9,7 +9,7 @@ import ModernUploadForm from "@/components/modern-upload-form"
 import ContentGrid from "@/components/content-grid"
 import Recommendations from "@/components/recommendations"
 import LevelProgress from "@/components/level-progress"
-import Level10Celebration from "@/components/level-10-celebration"
+import LevelUpCelebration from "@/components/level-up-celebration"
 import { Plus } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
@@ -36,7 +36,7 @@ export default function Dashboard() {
   const [contents, setContents] = useState<Content[]>([])
   const [showUploadForm, setShowUploadForm] = useState(false)
   const [activeTab, setActiveTab] = useState("content")
-  const [showLevel10Celebration, setShowLevel10Celebration] = useState(false)
+  const [showLevelUpCelebration, setShowLevelUpCelebration] = useState(false)
   const [previousLevel, setPreviousLevel] = useState(0)
   const router = useRouter()
   const { toast } = useToast()
@@ -73,14 +73,17 @@ export default function Dashboard() {
   }
 
   const handleLevelUp = (newLevel: number) => {
-    if (newLevel === 10 && previousLevel < 10) {
-      setShowLevel10Celebration(true)
+    // Trigger celebration at every 10-level milestone (10, 20, 30, ...)
+    const newMilestoneReached = newLevel > previousLevel && newLevel % 10 === 0 && newLevel >= 10;
+
+    if (newMilestoneReached) {
+      setShowLevelUpCelebration(true);
     }
     setPreviousLevel(newLevel)
   }
 
   const handleViewRecommendations = () => {
-    setShowLevel10Celebration(false)
+    setShowLevelUpCelebration(false)
     setActiveTab("discover")
   }
 
@@ -219,10 +222,11 @@ export default function Dashboard() {
         <ModernUploadForm userId={user.id} onSuccess={handleUploadSuccess} onClose={handleCloseUploadForm} />
       )}
 
-      <Level10Celebration
-        isVisible={showLevel10Celebration}
-        onClose={() => setShowLevel10Celebration(false)}
+      <LevelUpCelebration
+        isVisible={showLevelUpCelebration}
+        onClose={() => setShowLevelUpCelebration(false)}
         onViewRecommendations={handleViewRecommendations}
+        level={currentLevel}
       />
     </>
   )
