@@ -37,7 +37,7 @@ export default function Dashboard() {
   const [showUploadForm, setShowUploadForm] = useState(false)
   const [activeTab, setActiveTab] = useState("content")
   const [showLevelUpCelebration, setShowLevelUpCelebration] = useState(false)
-  const [previousLevel, setPreviousLevel] = useState(0)
+  const [lastCelebratedLevel, setLastCelebratedLevel] = useState(0)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -51,6 +51,20 @@ export default function Dashboard() {
         return
       }
       setUser(user as any)
+
+      // Fetch last celebrated level from database
+      const { data: userProgress, error: progressError } = await supabase
+        .from('user_progress')
+        .select('last_celebrated_level')
+        .eq('user_id', user.id)
+        .single();
+
+      if (progressError && progressError.code !== 'PGRST116') { // PGRST116 means no rows found
+        console.error("Error fetching user progress:", progressError);
+      } else if (userProgress) {
+        setLastCelebratedLevel(userProgress.last_celebrated_level);
+      }
+
       // Fetch posts for this user
       const { data: posts, error: postsError } = await supabase
         .from("contents")
@@ -72,14 +86,33 @@ export default function Dashboard() {
     router.push("/login")
   }
 
-  const handleLevelUp = (newLevel: number) => {
+  const handleLevelUp = async (newLevel: number) => {
     // Trigger celebration at every 10-level milestone (10, 20, 30, ...)
-    const newMilestoneReached = newLevel > previousLevel && newLevel % 10 === 0 && newLevel >= 10;
+    const newMilestoneReached = newLevel % 10 === 0 && newLevel >= 10; // Check if it's a milestone
+    const hasNotBeenCelebratedBefore = newLevel > lastCelebratedLevel; // Check if it's a new, uncelebrated milestone
 
-    if (newMilestoneReached) {
+    if (newMilestoneReached && hasNotBeenCelebratedBefore && user) { // Ensure user exists for database update
       setShowLevelUpCelebration(true);
+
+      // Persist the celebrated level to database
+      const { error: upsertError } = await supabase
+        .from('user_progress')
+        .upsert(
+          { user_id: user.id, last_celebrated_level: newLevel },
+          { onConflict: 'user_id', ignoreDuplicates: false } // Use onConflict to update if exists
+        );
+
+      if (upsertError) {
+        console.error("Error upserting user progress:", upsertError);
+        toast({
+          title: "Error",
+          description: "Failed to save celebration status.",
+          variant: "destructive",
+        });
+      } else {
+        setLastCelebratedLevel(newLevel); // Update state only on successful DB write
+      }
     }
-    setPreviousLevel(newLevel)
   }
 
   const handleViewRecommendations = () => {
