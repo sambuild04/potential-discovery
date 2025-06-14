@@ -25,6 +25,7 @@ interface Recommendation {
 export default function Recommendations({ userId, contentCount }: RecommendationsProps) {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export default function Recommendations({ userId, contentCount }: Recommendation
         setRecommendations([recommendation])
       } catch (error: any) {
         console.error("Error fetching recommendations:", error)
+        setError("Failed to load recommendations. Please try again later.")
         toast({
           title: "Error",
           description: "Failed to load recommendations. Please try again later.",
@@ -82,6 +84,22 @@ export default function Recommendations({ userId, contentCount }: Recommendation
           <p className="mt-4 text-gray-500">Analyzing your content...</p>
         </div>
       </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <Alert className="max-w-xl mx-auto mt-8">
+        <AlertCircle className="h-5 w-5 text-red-500" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  if (!recommendations || recommendations.length === 0) {
+    return (
+      <div className="text-center text-gray-500 mt-8">No book recommendation available yet. Try creating more posts or refreshing the page.</div>
     )
   }
 

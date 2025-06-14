@@ -151,12 +151,6 @@ export default function Dashboard() {
               <Plus className="h-4 w-4" />
               Create Post
             </button>
-            <button
-              onClick={handleSignOut}
-              className="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-md font-medium transition-colors"
-            >
-              Sign Out
-            </button>
           </div>
         </div>
 
