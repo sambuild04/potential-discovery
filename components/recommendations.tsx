@@ -30,6 +30,8 @@ export default function Recommendations({ userId, contentCount }: Recommendation
 
   useEffect(() => {
     const fetchRecommendations = async () => {
+      setLoading(true);
+      setError(null);
       try {
         // First check if we have existing recommendations
         const { data: existingRecs, error: fetchError } = await supabase
@@ -46,13 +48,13 @@ export default function Recommendations({ userId, contentCount }: Recommendation
         }
 
         // If no existing recommendations, generate new ones
-        const response = await fetch("/api/recommendations", {
-          method: "POST",
+        const response = await fetch('/api/recommendations', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ userId }),
-        })
+          body: JSON.stringify({ userId, contentCount }),
+        });
 
         if (!response.ok) {
           throw new Error("Failed to generate recommendations")
@@ -74,7 +76,7 @@ export default function Recommendations({ userId, contentCount }: Recommendation
     }
 
     fetchRecommendations()
-  }, [userId, toast])
+  }, [userId, contentCount, toast])
 
   if (loading) {
     return (
@@ -137,9 +139,6 @@ export default function Recommendations({ userId, contentCount }: Recommendation
               <h4 className="font-medium text-blue-700 mb-1">Why we recommend this:</h4>
               <p className="text-sm text-gray-700">{rec.reason}</p>
             </div>
-            <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => window.open(rec.link, "_blank")}>
-              Explore This Book
-            </Button>
           </CardContent>
         </Card>
       ))}

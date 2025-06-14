@@ -16,13 +16,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { userId } = req.body;
+  const { userId, contentCount } = req.body;
   if (!userId) {
     console.warn('[API] userId is required');
     return res.status(400).json({ error: 'userId is required' });
   }
 
-  console.log(`[API] /api/recommendations called with userId: ${userId}`);
+  console.log(`[API] /api/recommendations called with userId: ${userId}, contentCount: ${contentCount}`);
 
   try {
     const { data: userContent, error: contentError } = await supabase
@@ -47,31 +47,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Add other relevant fields from your 'posts' table if desired
     }));
 
-    const prompt = `Based on the following user posts, suggest a single book recommendation (title and author only) that would be meaningful to them. Focus on the themes, interests, or topics expressed in their posts.
+    let progressMessage = "";
+    if (contentCount !== undefined && contentCount >= 10) {
+      progressMessage = `The user has created ${contentCount} posts and is progressing well in their journey. Try to provide a diverse and insightful recommendation based on their cumulative content.`;
+    }
+
+    const prompt = `Based on the following user posts, suggest a single book recommendation (title, author, a brief description, and a reason for recommendation). Focus on the themes, interests, or topics expressed in their posts. ${progressMessage}
 
 User posts:
 ${JSON.stringify(userPosts, null, 2)}
 
 Provide the recommendation in JSON format like this:
-{ "title": "Book Title", "author": "Book Author", "reason": "Why this book is recommended based on their posts." }
+{ "title": "Book Title", "author": "Book Author", "description": "A brief summary of the book.", "reason": "Why this book is recommended based on their posts.", "type": "book" }
 `;
 
     try {
       const completion = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo", // You can choose a different model like "gpt-4" if preferred
+        model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: prompt }],
-        temperature: 0.7,
-        max_tokens: 300,
+        temperature: 0.8,
+        max_tokens: 500,
       });
 
       const recommendationText = completion.choices[0].message.content;
       let recommendation;
       try {
-        recommendation = JSON.parse(recommendationText!);
+        const parsed = JSON.parse(recommendationText!);
+        recommendation = {
+          title: parsed.title || "Untitled Book",
+          author: parsed.author || "Unknown Author",
+          description: parsed.description || "No description provided.",
+          reason: parsed.reason || "Based on your journey.",
+          type: parsed.type || "book",
+        };
       } catch (parseError) {
         console.error('[API] Error parsing OpenAI response:', parseError);
-        // Fallback if OpenAI doesn't return valid JSON
-        recommendation = { title: "Generic Book", author: "AI Assistant", reason: "Could not parse recommendation." };
+        recommendation = { title: "Generic Book", author: "AI Assistant", description: "Could not generate a specific recommendation.", reason: "An issue occurred while processing your request.", type: "book" };
       }
 
       console.log('[API] Generated recommendation:', recommendation);
