@@ -25,6 +25,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   console.log(`[API] /api/recommendations called with userId: ${userId}, contentCount: ${contentCount}`);
 
   try {
+    // Determine the level milestone for caching
+    const levelMilestone = Math.floor(contentCount / 10) * 10;
+    if (levelMilestone < 10) { // Recommendations only start from level 10
+      return res.status(200).json({ recommendations: [], message: "Reach Level 10 to unlock recommendations." });
+    }
+
+    // 1. Check if recommendations already exist for this user at this level milestone
+    const { data: existingRecommendations, error: fetchError } = await supabase
+      .from('user_recommendations')
+      .select('recommendations')
+      .eq('user_id', userId)
+      .eq('content_count_at_generation', levelMilestone)
+      .single();
+
+    if (existingRecommendations) {
+      console.log(`[API] Returning cached recommendations for userId: ${userId}, level: ${levelMilestone}`);
+      return res.status(200).json({ recommendations: existingRecommendations.recommendations });
+    }
+
+    // 2. If not found, fetch user content and generate new recommendations
     const { data: userContent, error: contentError } = await supabase
       .from('posts')
       .select('*')
@@ -67,7 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    const prompt = `Based on the following user posts, suggest ${numRecommendations} book recommendations (title, author, a brief description, and a reason for recommendation). Focus on the themes, interests, or topics expressed in their posts. ${progressMessage}
+    const prompt = `Based on a deep analysis of the following user posts, suggest ${numRecommendations} book recommendations (title, author, a brief description, and a reason for recommendation). The reason MUST be highly specific and directly linked to the themes, keywords, and specific details found within the provided user posts, not generic concepts. ${progressMessage}
 
 User posts:
 ${JSON.stringify(userPosts, null, 2)}
@@ -107,6 +127,20 @@ Provide the recommendations as a JSON array of objects, like this:
         console.error('[API] Error parsing OpenAI response:', parseError);
         // Fallback if OpenAI doesn't return valid JSON or missing fields
         recommendations = [{ id: "fallback", title: "Generic Book", author: "AI Assistant", description: "Could not generate a specific recommendation.", reason: "An issue occurred while processing your request.", type: "book" }];
+      }
+
+      // 3. Store the newly generated recommendations in the database
+      const { error: insertError } = await supabase
+        .from('user_recommendations')
+        .insert({
+          user_id: userId,
+          content_count_at_generation: levelMilestone,
+          recommendations: recommendations, // Store the array of recommendations
+        });
+
+      if (insertError) {
+        console.error('[API] Error storing recommendations:', insertError);
+        // Continue to return recommendations even if storage fails
       }
 
       console.log('[API] Generated recommendations:', recommendations);
