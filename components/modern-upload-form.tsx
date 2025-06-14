@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { X, Eye, Bold, Italic, Link, List, ListOrdered, Type, ImageIcon, Video, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { supabase } from "@/lib/supabase"
 
 interface ModernUploadFormProps {
   userId: string
@@ -82,40 +83,33 @@ export default function ModernUploadForm({ userId, onSuccess, onClose }: ModernU
     setLoading(true)
 
     try {
-      // Simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      // Create mock content
       let url = ""
-
       if (contentType === "diary") {
         url = description.trim()
-      } else if (contentType === "image") {
-        // Generate a placeholder image URL based on the title
-        const query = encodeURIComponent(title.toLowerCase().replace(/\s+/g, "+"))
-        url = `/placeholder.svg?height=400&width=600&query=${query}`
-      } else if (contentType === "video") {
-        // For video, we'll use a placeholder that represents a video
-        url = `/placeholder.svg?height=300&width=500&query=video+placeholder+${encodeURIComponent(title)}`
+      } else if (contentType === "image" && file) {
+        // Upload image to Supabase Storage
+        const fileExt = file.name.split(".").pop()
+        const fileName = `${userId}/${Date.now()}.${fileExt}`
+        const { error: uploadError } = await supabase.storage.from("user-content").upload(fileName, file)
+        if (uploadError) throw uploadError
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage.from("user-content").getPublicUrl(fileName)
+        url = publicUrl
       }
-
-      const newContent = {
-        id: Date.now().toString(),
+      // Save to DB
+      const { data, error: insertError } = await supabase.from("contents").insert({
+        user_id: userId,
         title: title.trim(),
         description: contentType === "diary" ? "" : description.trim(),
         type: contentType,
         url: url,
-        created_at: new Date().toISOString(),
-      }
-
-      onSuccess(newContent)
-
-      // Reset form
+      }).select().single()
+      if (insertError) throw insertError
+      onSuccess(data)
       setTitle("")
       setDescription("")
       setFile(null)
       setContentType("diary")
-
       onClose()
     } catch (err: any) {
       console.error("Upload error:", err)

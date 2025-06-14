@@ -11,6 +11,7 @@ import Recommendations from "@/components/recommendations"
 import LevelProgress from "@/components/level-progress"
 import Level10Celebration from "@/components/level-10-celebration"
 import { Plus } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 type User = {
   id: string
@@ -29,47 +30,10 @@ type Content = {
   created_at: string
 }
 
-// Mock user data
-const mockUser: User = {
-  id: "mock-user-123",
-  email: "demo@example.com",
-  user_metadata: {
-    full_name: "Demo User",
-  },
-}
-
-// Mock initial content to show some existing posts
-const initialMockContent: Content[] = [
-  {
-    id: "1",
-    title: "My Morning Reflection",
-    type: "diary",
-    url: "Today I woke up feeling grateful for the small moments in life. There's something beautiful about the quiet morning hours when the world is still waking up. I've been thinking about how we often rush through our days without taking time to appreciate what we have.",
-    description: "",
-    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "2",
-    title: "Sunset at the Beach",
-    type: "image",
-    url: "/placeholder.svg?height=400&width=600",
-    description: "Captured this amazing sunset during my evening walk. The colors were absolutely breathtaking.",
-    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "3",
-    title: "Thoughts on Personal Growth",
-    type: "diary",
-    url: "I've been reading about mindfulness and how it can transform our daily experience. It's fascinating how simply paying attention to the present moment can shift our entire perspective. I want to practice being more present in my conversations and daily activities.",
-    description: "",
-    created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-  },
-]
-
 export default function Dashboard() {
-  const [user] = useState<User>(mockUser)
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [contents, setContents] = useState<Content[]>(initialMockContent)
+  const [contents, setContents] = useState<Content[]>([])
   const [showUploadForm, setShowUploadForm] = useState(false)
   const [activeTab, setActiveTab] = useState("content")
   const [showLevel10Celebration, setShowLevel10Celebration] = useState(false)
@@ -78,16 +42,34 @@ export default function Dashboard() {
   const { toast } = useToast()
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
+    const fetchUserAndContent = async () => {
+      setLoading(true)
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        setUser(null)
+        setLoading(false)
+        return
+      }
+      setUser(user as any)
+      // Fetch posts for this user
+      const { data: posts, error: postsError } = await supabase
+        .from("contents")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+      if (postsError) {
+        setContents([])
+      } else {
+        setContents(posts || [])
+      }
       setLoading(false)
-    }, 1000)
-
-    return () => clearTimeout(timer)
+    }
+    fetchUserAndContent()
   }, [])
 
   const handleSignOut = async () => {
-    router.push("/")
+    await supabase.auth.signOut()
+    router.push("/login")
   }
 
   const handleLevelUp = (newLevel: number) => {
@@ -135,6 +117,20 @@ export default function Dashboard() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-500">Loading your dashboard...</p>
         </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)]">
+        <h2 className="text-2xl font-bold mb-4">Please sign in to access your dashboard</h2>
+        <button
+          onClick={() => router.push("/login")}
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
+        >
+          Sign In
+        </button>
       </div>
     )
   }

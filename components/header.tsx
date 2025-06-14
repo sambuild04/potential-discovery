@@ -3,14 +3,29 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { supabase } from "@/lib/supabase"
 
 export default function Header() {
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+    getUser()
+  }, [])
 
   const isActive = (path: string) => {
     return pathname === path
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    window.location.href = "/login"
   }
 
   return (
@@ -83,12 +98,18 @@ export default function Header() {
         </div>
 
         <div className="hidden md:flex items-center gap-4">
-          <Link href="/login">
-            <Button variant="ghost">Log In</Button>
-          </Link>
-          <Link href="/signup">
-            <Button className="bg-blue-600 hover:bg-blue-700">Sign Up</Button>
-          </Link>
+          {!user ? (
+            <>
+              <Link href="/login">
+                <Button variant="ghost">Log In</Button>
+              </Link>
+              <Link href="/signup">
+                <Button className="bg-blue-600 hover:bg-blue-700">Sign Up</Button>
+              </Link>
+            </>
+          ) : (
+            <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
+          )}
         </div>
       </div>
 
@@ -118,14 +139,22 @@ export default function Header() {
               Dashboard
             </Link>
             <div className="flex flex-col space-y-2 pt-2 border-t">
-              <Link href="/login" onClick={() => setIsMenuOpen(false)}>
-                <Button variant="ghost" className="w-full justify-start">
-                  Log In
+              {!user ? (
+                <>
+                  <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">
+                      Log In
+                    </Button>
+                  </Link>
+                  <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700">Sign Up</Button>
+                  </Link>
+                </>
+              ) : (
+                <Button variant="outline" className="w-full justify-start" onClick={handleSignOut}>
+                  Sign Out
                 </Button>
-              </Link>
-              <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">Sign Up</Button>
-              </Link>
+              )}
             </div>
           </nav>
         </div>
