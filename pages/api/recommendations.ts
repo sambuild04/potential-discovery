@@ -116,7 +116,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // Instruct OpenAI to generate NEW and DISTINCT books
-      const prompt = `Based on a deep and thorough analysis of the following user posts, suggest ${numRecommendationsToGenerate} *new and distinct* book recommendations (title, author, a brief description, and a reason for recommendation). The reason MUST be highly specific, directly linked to the explicit themes, keywords, and significant details found within the provided user posts. Avoid generic phrases or broad concepts like 'personal growth' unless explicitly and strongly supported by the user's content.
+      const prompt = `Based on a deep and thorough analysis of the following user posts, suggest ${numRecommendationsToGenerate} *new and distinct* book recommendations (title, author, a brief description, and a reason for recommendation). The reason MUST be highly specific, directly linked to the explicit themes, keywords, and significant details found within the provided user posts. **Crucially, the recommendation and its reason MUST directly align with the primary stated interests and goals in the user's posts, such as financial success or wealth building, if those themes are dominant.** Avoid generic concepts or broad personal development unless explicitly and strongly supported by the user's content.
 
 ${existingUniqueRecommendations.length > 0 ? `Already recommended books (DO NOT recommend these again):
 ${JSON.stringify(existingUniqueRecommendations.map(r => r.title), null, 2)}
