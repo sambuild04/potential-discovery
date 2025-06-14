@@ -59,14 +59,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Determine how many recommendations we *should* have at this milestone
-    let targetNumRecommendations = 1;
-    if (currentLevelMilestone >= 20 && currentLevelMilestone < 30) {
-      targetNumRecommendations = 2;
-    } else if (currentLevelMilestone >= 30 && currentLevelMilestone < 40) {
-      targetNumRecommendations = 3;
-    } else if (currentLevelMilestone >= 40) {
-      targetNumRecommendations = 4; // Add 4th book for Level 40+
-    }
+    const targetNumRecommendations = Math.floor(currentLevelMilestone / 10); // 1 book for Level 10, 2 for 20, etc.
 
     // Check if we already have enough (or more) unique recommendations for this milestone
     if (existingUniqueRecommendations.length >= targetNumRecommendations) {
