@@ -18,7 +18,6 @@ interface Recommendation {
   title: string
   description: string
   reason: string
-  link: string
   type: "article" | "book" | "video" | "activity"
 }
 
@@ -57,14 +56,14 @@ export default function Recommendations({ userId, contentCount }: Recommendation
         });
 
         if (!response.ok) {
-          throw new Error("Failed to generate recommendations")
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch recommendations');
         }
-
-        const { recommendation } = await response.json()
-        setRecommendations([recommendation])
-      } catch (error: any) {
-        console.error("Error fetching recommendations:", error)
-        setError("Failed to load recommendations. Please try again later.")
+        const data = await response.json();
+        setRecommendations(data.recommendations || []);
+      } catch (err: any) {
+        console.error("Error fetching recommendations:", err)
+        setError(err.message)
         toast({
           title: "Error",
           description: "Failed to load recommendations. Please try again later.",

@@ -47,18 +47,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Add other relevant fields from your 'posts' table if desired
     }));
 
-    let progressMessage = "";
-    if (contentCount !== undefined && contentCount >= 10) {
-      progressMessage = `The user has created ${contentCount} posts and is progressing well in their journey. Try to provide a diverse and insightful recommendation based on their cumulative content.`;
+    let numRecommendations = 1;
+    if (contentCount >= 20 && contentCount < 30) {
+      numRecommendations = 2;
+    } else if (contentCount >= 30) {
+      numRecommendations = 3;
     }
 
-    const prompt = `Based on the following user posts, suggest a single book recommendation (title, author, a brief description, and a reason for recommendation). Focus on the themes, interests, or topics expressed in their posts. ${progressMessage}
+    let progressMessage = ``;
+    if (contentCount !== undefined) {
+      if (contentCount < 10) {
+        progressMessage = `The user is still building their content base (${contentCount} posts). Provide a foundational recommendation.`;
+      } else if (contentCount >= 10 && contentCount < 20) {
+        progressMessage = `The user has reached Level 10 and has ${contentCount} posts. Provide an insightful recommendation.`;
+      } else if (contentCount >= 20 && contentCount < 30) {
+        progressMessage = `The user is at Level 20+ with ${contentCount} posts. Provide diverse and insightful recommendations.`;
+      } else if (contentCount >= 30) {
+        progressMessage = `The user is at Level 30+ with ${contentCount} posts. Provide comprehensive and unique recommendations.`;
+      }
+    }
+
+    const prompt = `Based on the following user posts, suggest ${numRecommendations} book recommendations (title, author, a brief description, and a reason for recommendation). Focus on the themes, interests, or topics expressed in their posts. ${progressMessage}
 
 User posts:
 ${JSON.stringify(userPosts, null, 2)}
 
-Provide the recommendation in JSON format like this:
-{ "title": "Book Title", "author": "Book Author", "description": "A brief summary of the book.", "reason": "Why this book is recommended based on their posts.", "type": "book" }
+Provide the recommendations as a JSON array of objects, like this:
+[
+  { "title": "Book Title 1", "author": "Book Author 1", "description": "A brief summary of book 1.", "reason": "Why this book is recommended based on their posts.", "type": "book" },
+  { "title": "Book Title 2", "author": "Book Author 2", "description": "A brief summary of book 2.", "reason": "Why this book is recommended based on their posts.", "type": "book" }
+]
 `;
 
     try {
@@ -70,23 +88,29 @@ Provide the recommendation in JSON format like this:
       });
 
       const recommendationText = completion.choices[0].message.content;
-      let recommendation;
+      let recommendations: any[] = [];
+
       try {
         const parsed = JSON.parse(recommendationText!);
-        recommendation = {
-          title: parsed.title || "Untitled Book",
-          author: parsed.author || "Unknown Author",
-          description: parsed.description || "No description provided.",
-          reason: parsed.reason || "Based on your journey.",
-          type: parsed.type || "book",
-        };
+        // Ensure parsed is an array, even if OpenAI returns a single object
+        const rawRecommendations = Array.isArray(parsed) ? parsed : [parsed];
+
+        recommendations = rawRecommendations.map(rec => ({
+          id: rec.id || Math.random().toString(36).substring(2, 15), // Generate a simple ID if not provided
+          title: rec.title || "Untitled Book",
+          author: rec.author || "Unknown Author",
+          description: rec.description || "No description provided.",
+          reason: rec.reason || "Based on your journey.",
+          type: rec.type || "book",
+        }));
       } catch (parseError) {
         console.error('[API] Error parsing OpenAI response:', parseError);
-        recommendation = { title: "Generic Book", author: "AI Assistant", description: "Could not generate a specific recommendation.", reason: "An issue occurred while processing your request.", type: "book" };
+        // Fallback if OpenAI doesn't return valid JSON or missing fields
+        recommendations = [{ id: "fallback", title: "Generic Book", author: "AI Assistant", description: "Could not generate a specific recommendation.", reason: "An issue occurred while processing your request.", type: "book" }];
       }
 
-      console.log('[API] Generated recommendation:', recommendation);
-      return res.status(200).json({ recommendation });
+      console.log('[API] Generated recommendations:', recommendations);
+      return res.status(200).json({ recommendations });
     } catch (openaiError) {
       console.error('[API] Error calling OpenAI API:', openaiError);
       return res.status(500).json({ error: 'Failed to generate recommendation', details: openaiError });
