@@ -62,8 +62,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let targetNumRecommendations = 1;
     if (currentLevelMilestone >= 20 && currentLevelMilestone < 30) {
       targetNumRecommendations = 2;
-    } else if (currentLevelMilestone >= 30) {
+    } else if (currentLevelMilestone >= 30 && currentLevelMilestone < 40) {
       targetNumRecommendations = 3;
+    } else if (currentLevelMilestone >= 40) {
+      targetNumRecommendations = 4; // Add 4th book for Level 40+
     }
 
     // Check if we already have enough (or more) unique recommendations for this milestone
@@ -146,9 +148,11 @@ Provide the recommendations as a JSON array of objects, like this:
           const parsed = JSON.parse(recommendationText!); // Expecting an array now
           parsedRecommendations = Array.isArray(parsed) ? parsed : [parsed]; // Ensure it's an array
 
-          // Filter out any recommendations that might duplicate existing ones
+          // Filter out recommendations that have the same title as existing unique ones
           const newUniqueRecs = parsedRecommendations.filter(rec => 
-            rec.id || (rec.title && !existingUniqueRecommendations.some(eRec => eRec.title === rec.title))
+            !existingUniqueRecommendations.some(eRec => 
+              eRec.title && rec.title && eRec.title.toLowerCase() === rec.title.toLowerCase()
+            )
           );
           
           newlyGeneratedRecommendations = newUniqueRecs.map(rec => ({
@@ -179,11 +183,11 @@ Provide the recommendations as a JSON array of objects, like this:
 
     // Ensure uniqueness of the combined list (in case newly generated overlaps with existing due to AI behavior)
     const finalUniqueRecs: any[] = [];
-    const finalUniqueRecIds = new Set<string>();
+    const finalUniqueRecTitles = new Set<string>();
     finalRecommendations.forEach(rec => {
-      if (rec.id && !finalUniqueRecIds.has(rec.id)) {
+      if (rec.title && !finalUniqueRecTitles.has(rec.title.toLowerCase())) {
         finalUniqueRecs.push(rec);
-        finalUniqueRecIds.add(rec.id);
+        finalUniqueRecTitles.add(rec.title.toLowerCase());
       }
     });
 
