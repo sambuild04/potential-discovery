@@ -76,6 +76,14 @@ export default function Header() {
           >
             Dashboard
           </Link>
+          <Link
+            href="/privacy-policy"
+            className={`text-sm font-medium ${
+              isActive("/privacy-policy") ? "text-blue-600" : "text-gray-600 hover:text-blue-600"
+            }`}
+          >
+            Privacy Policy
+          </Link>
         </nav>
 
         {/* Mobile Menu Button */}
@@ -137,6 +145,13 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               Dashboard
+            </Link>
+            <Link
+              href="/privacy-policy"
+              className={`text-sm font-medium ${isActive("/privacy-policy") ? "text-blue-600" : "text-gray-600"}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Privacy Policy
             </Link>
             <div className="flex flex-col space-y-2 pt-2 border-t">
               {!user ? (
