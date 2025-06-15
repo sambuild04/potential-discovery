@@ -51,9 +51,17 @@ export default function Home() {
             <div className="space-y-2">
               <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">How It Works</h2>
               <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed dark:text-gray-400">
-                Potential Discovery learns from your uploads to provide personalized recommendations for a more
-                meaningful life.
+                Potential Discovery learns from your uploads to suggest a book.
               </p>
+            </div>
+            <div className="w-full max-w-2xl mx-auto mt-8">
+              <Image
+                src="/images/how-it-works.png"
+                alt="How Potential Discovery Works"
+                width={700}
+                height={400}
+                className="w-full h-auto object-contain rounded-lg shadow-lg"
+              />
             </div>
           </div>
           <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-3">
