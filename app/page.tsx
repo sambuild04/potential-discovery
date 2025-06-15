@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import BookIcon from "@/components/book-icon"
+import Image from "next/image"
 
 export default function Home() {
   return (
@@ -32,7 +33,13 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center justify-center">
-              <BookIcon className="w-full h-full max-w-[450px] max-h-[550px]" width={450} height={550} />
+              <Image
+                src="/images/homepage-illustration.png"
+                alt="Discover your meaningful path through books"
+                width={600}
+                height={550}
+                className="w-full h-full max-w-[600px] max-h-[550px] object-contain"
+              />
             </div>
           </div>
         </div>

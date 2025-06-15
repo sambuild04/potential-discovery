@@ -74,13 +74,7 @@ export default function PrivacyPolicy() {
         <section>
           <h2 className="text-2xl font-semibold mb-4">7. How to Contact Us</h2>
           <p className="text-gray-700 dark:text-gray-400">
-            If you have questions or comments about this policy, you may email us at [Your Contact Email Here] or contact us by post at:
-          </p>
-          <p className="text-gray-700 dark:text-gray-400 mt-2">
-            [Your Company Name/Your Name]<br/>
-            [Your Address]<br/>
-            [Your City, Postal Code]<br/>
-            [Your Country]
+            If you have questions or comments about this policy, you may email us at xpotential2023@gmail.com.
           </p>
         </section>
       </div>
