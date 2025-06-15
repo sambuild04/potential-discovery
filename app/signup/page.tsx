@@ -25,7 +25,9 @@ export default function SignUp() {
     setLoading(true)
 
     try {
-      const { error } = await supabase.auth.signUp({
+      // Supabase `signUp` will automatically sign in the user if email confirmation is disabled in your Supabase project settings.
+      // Go to Supabase project -> Authentication -> Settings -> Disable "Enable Email Confirmations"
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -39,12 +41,22 @@ export default function SignUp() {
         throw error
       }
 
-      toast({
-        title: "Account created!",
-        description: "Please check your email to verify your account.",
-      })
+      // Check if a session was immediately created (means email confirmation is off)
+      if (data.session) {
+        toast({
+          title: "Account created and signed in!",
+          description: "You are now automatically logged in.",
+        })
+        router.push("/dashboard") // Redirect to dashboard directly
+      } else {
+        // If no session, it means email confirmation is still enabled in Supabase settings
+        toast({
+          title: "Account created!",
+          description: "Please check your email to verify your account. If you want to bypass this step, disable email confirmations in your Supabase project settings.",
+        })
+        router.push("/login") // Still go to login to wait for verification
+      }
 
-      router.push("/login")
     } catch (error: any) {
       toast({
         title: "Error",
