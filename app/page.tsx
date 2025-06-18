@@ -12,7 +12,7 @@ export default function Home() {
             <div className="flex flex-col justify-center space-y-4">
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                  Discover Your Meaningful Path Through Books
+                  For every 10 posts you created, this platform provide 1 book recommendation based on those.
                 </h1>
                 <p className="max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">
                   Upload your memories, experiences, and thoughts. Let Potential Discovery guide you to meaningful books
